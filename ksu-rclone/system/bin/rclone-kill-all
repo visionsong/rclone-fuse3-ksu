@@ -1,0 +1,26 @@
+#!/system/bin/sh
+# Unmount every rclone FUSE mount and stop rclone processes.
+MODDIR=${0%/*}/../..
+set -a
+. "$MODDIR/env"
+set +a
+
+echo "Unmounting rclone mounts..."
+mount 2>/dev/null | grep "type fuse.rclone" | awk '{for (i=1; i<=NF; i++) if ($i=="type") print $(i-1)}' | while read -r mp; do
+  # fusermount3 lives next to the rclone binary in the module.
+  if "$RCLONE_BIN_DIR/fusermount3" -u "$mp" 2>/dev/null; then
+    echo "- unmounted: $mp"
+  elif umount -l "$mp" 2>/dev/null; then
+    echo "- lazily unmounted: $mp"
+  else
+    echo "- FAILED to unmount: $mp"
+  fi
+done
+
+echo "Killing rclone processes..."
+if pgrep -f "$RCLONE_BIN_DIR/rclone" >/dev/null 2>&1 || pgrep -f "[r]clone" >/dev/null 2>&1; then
+  pkill -f "[r]clone" 2>/dev/null
+  echo "rclone processes killed."
+else
+  echo "no rclone processes found."
+fi

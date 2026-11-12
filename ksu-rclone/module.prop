@@ -1,0 +1,7 @@
+id=rclone
+name=RClone
+version=v1.76.0
+versionCode=41
+author=visionsong
+description=KernelSU module that mounts rclone remotes on boot and keeps them in sync. No metamodule required.
+updateJson=https://github.com/visionsong/rclone-fuse3-ksu/releases/latest/download/update-$ABI.json

@@ -32,11 +32,11 @@ jobs:
         id: check_version
         run: |
           # Extract current version
-          CURRENT_VERSION=$(grep -oP '^version=\K.*' magisk-rclone/module.prop)
+          CURRENT_VERSION=$(grep -oP '^version=\K.*' ksu-rclone/module.prop)
           echo "Current version: $CURRENT_VERSION"
           
           # Try to get previous version (if commit history exists)
-          git show HEAD~1:magisk-rclone/module.prop > /tmp/old_module.prop 2>/dev/null || echo "version=" > /tmp/old_module.prop
+          git show HEAD~1:ksu-rclone/module.prop > /tmp/old_module.prop 2>/dev/null || echo "version=" > /tmp/old_module.prop
           PREVIOUS_VERSION=$(grep -oP '^version=\K.*' /tmp/old_module.prop || echo "")
           echo "Previous version: $PREVIOUS_VERSION"
           
@@ -192,7 +192,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: magisk-rclone
+          name: ksu-rclone
           if-no-files-found: error
           path: "*.zip"
           compression-level: 0
@@ -202,7 +202,7 @@ jobs:
         if: steps.upload_android_binaries.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: magisk-rclone
+          name: ksu-rclone
           if-no-files-found: error
           path: "*.zip"
           compression-level: 0

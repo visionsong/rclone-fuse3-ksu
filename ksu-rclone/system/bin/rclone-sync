@@ -1,0 +1,10 @@
+#!/system/bin/sh
+# One-shot `rclone sync` with the module environment loaded.
+MODDIR=${0%/*}/../..
+set -a
+. "$MODDIR/env"
+set +a
+
+[ -n "$RCLONE_RC" ] && unset RCLONE_RC
+
+exec "$RCLONE_BIN_DIR/rclone" sync "$@"

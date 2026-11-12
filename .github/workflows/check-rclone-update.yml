@@ -24,7 +24,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get current version from module.prop
-          CURRENT_VERSION=$(grep -oP '^version=\Kv.*' magisk-rclone/module.prop)
+          CURRENT_VERSION=$(grep -oP '^version=\Kv.*' ksu-rclone/module.prop)
           echo "Current version: $CURRENT_VERSION"
           
           # Get latest release from Rclone GitHub API with authentication and retry logic
@@ -33,7 +33,7 @@ jobs:
             RELEASE_INFO=$(curl -s --fail --connect-timeout 30 --max-time 60 \
               -H "Accept: application/vnd.github.v3+json" \
               -H "Authorization: token $GITHUB_TOKEN" \
-              -H "User-Agent: rclone-fuse3-magisk-updater" \
+              -H "User-Agent: rclone-fuse3-ksu-updater" \
               "https://api.github.com/repos/rclone/rclone/releases/latest") && break
             echo "Attempt $i failed, retrying in 10 seconds..."
             sleep 10
@@ -114,7 +114,7 @@ jobs:
           RECENT_RELEASES=$(curl -s --fail --connect-timeout 30 --max-time 60 \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token $GITHUB_TOKEN" \
-            -H "User-Agent: rclone-fuse3-magisk-updater" \
+            -H "User-Agent: rclone-fuse3-ksu-updater" \
             "https://api.github.com/repos/rclone/rclone/releases?per_page=5")
           
           if [ $? -eq 0 ] && [ -n "$RECENT_RELEASES" ]; then
@@ -154,22 +154,22 @@ jobs:
           echo "🔍 Validating version update: $CURRENT_VERSION → $NEW_VERSION"
           
           # Update version in module.prop
-          sed -i "s/^version=.*/version=$NEW_VERSION/" magisk-rclone/module.prop
+          sed -i "s/^version=.*/version=$NEW_VERSION/" ksu-rclone/module.prop
           
           # Increment versionCode
-          CURRENT_VERSION_CODE=$(grep -oP '^versionCode=\K.*' magisk-rclone/module.prop)
+          CURRENT_VERSION_CODE=$(grep -oP '^versionCode=\K.*' ksu-rclone/module.prop)
           NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
-          sed -i "s/^versionCode=.*/versionCode=$NEW_VERSION_CODE/" magisk-rclone/module.prop
+          sed -i "s/^versionCode=.*/versionCode=$NEW_VERSION_CODE/" ksu-rclone/module.prop
           
           echo "✅ Updated version to $NEW_VERSION and versionCode to $NEW_VERSION_CODE"
           
           # Verify the changes
           echo "📋 New module.prop content:"
-          cat magisk-rclone/module.prop
+          cat ksu-rclone/module.prop
           
           # Validate that changes were applied correctly
-          UPDATED_VERSION=$(grep -oP '^version=\Kv.*' magisk-rclone/module.prop)
-          UPDATED_VERSION_CODE=$(grep -oP '^versionCode=\K.*' magisk-rclone/module.prop)
+          UPDATED_VERSION=$(grep -oP '^version=\Kv.*' ksu-rclone/module.prop)
+          UPDATED_VERSION_CODE=$(grep -oP '^versionCode=\K.*' ksu-rclone/module.prop)
           
           if [ "$UPDATED_VERSION" != "$NEW_VERSION" ]; then
             echo "❌ Version update failed - expected $NEW_VERSION, got $UPDATED_VERSION"
@@ -198,8 +198,8 @@ jobs:
             **Release Date:** ${{ steps.check_release.outputs.release_date }}
             
             ### 📝 Changes Made
-            - ✅ Updated version in `magisk-rclone/module.prop`
-            - ✅ Incremented versionCode for Magisk module
+            - ✅ Updated version in `ksu-rclone/module.prop`
+            - ✅ Incremented versionCode for KernelSU module
             
             ### 🔗 Release Information
             **Release URL:** ${{ steps.check_release.outputs.release_url }}
@@ -244,6 +244,6 @@ jobs:
       - name: No Update Needed
         if: steps.check_release.outputs.update_needed == 'false'
         run: |
-          CURRENT_VERSION=$(grep -oP '^version=\Kv.*' magisk-rclone/module.prop)
+          CURRENT_VERSION=$(grep -oP '^version=\Kv.*' ksu-rclone/module.prop)
           echo "ℹ️ Rclone is already up to date (Current: $CURRENT_VERSION)"
           echo "   No action required - workflow completed successfully"

@@ -1,0 +1,59 @@
+#!/system/bin/sh
+# Mount one rclone remote and expose it to /sdcard.
+#
+#   rclone-mount <remote> [extra rclone mount flags]
+#
+# The mount itself stays in the foreground unless the caller passes --daemon,
+# which is what service.sh does.
+RCLONEDIR="${RCLONEDIR:-}"
+if [ -z "$RCLONEDIR" ]; then
+  candidate=$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)
+  if [ -n "$candidate" ] && [ -f "$candidate/env" ]; then
+    RCLONEDIR="$candidate"
+  else
+    RCLONEDIR=/data/adb/modules/rclone
+  fi
+fi
+set -a
+. "$RCLONEDIR/env"
+set +a
+
+NAME=$1
+
+if [ -z "$NAME" ]; then
+  echo "Usage: $0 <remote> [rclone mount flags...]"
+  echo "  remote: an rclone remote name; it becomes the /sdcard mount folder"
+  exit 1
+fi
+shift
+
+MNT_DIR="${RCLONE_MOUNT_DIR:-/mnt}/rclone-$NAME"
+mkdir -p "$MNT_DIR" || { echo "Failed to create $MNT_DIR"; exit 1; }
+
+nice -n 1 "$RCLONE_BIN_DIR/rclone" mount "$NAME:" "$MNT_DIR" "$@"
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "rclone mount failed for '$NAME' (exit $rc)"
+  exit "$rc"
+fi
+
+# --daemon returns immediately; the bind mounts below stay valid because the
+# daemon keeps the FUSE mount alive.
+MEDIA_ENDPOINT="/data/media/0/$NAME"
+mkdir -p "$MEDIA_ENDPOINT" && chown media_rw:media_rw "$MEDIA_ENDPOINT" 2>/dev/null
+
+PASS_THROUGH="/mnt/pass_through/0/emulated/0/$NAME"
+if mkdir -p "$PASS_THROUGH" 2>/dev/null; then
+  mount | grep -q " $PASS_THROUGH " || mount --bind "$MNT_DIR" "$PASS_THROUGH" 2>/dev/null
+else
+  echo "Skipped $PASS_THROUGH (not available on this device)"
+fi
+
+DEFAULT_BINDPOINT="/mnt/runtime/default/emulated/0/$NAME"
+if mkdir -p "$DEFAULT_BINDPOINT" 2>/dev/null; then
+  mount | grep -q " $DEFAULT_BINDPOINT " || mount --bind "$MNT_DIR" "$DEFAULT_BINDPOINT" 2>/dev/null
+else
+  echo "Skipped $DEFAULT_BINDPOINT (not available on this device)"
+fi
+
+exit 0

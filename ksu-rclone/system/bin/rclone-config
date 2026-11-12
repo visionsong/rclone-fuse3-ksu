@@ -1,0 +1,12 @@
+#!/system/bin/sh
+# Load the module environment, then run `rclone config`.
+# Never rely on PATH: KernelSU only mounts system/ with a metamodule, so the
+# rclone binary is addressed by absolute path inside the module.
+MODDIR=${0%/*}/../..
+set -a
+. "$MODDIR/env"
+set +a
+
+[ -n "$RCLONE_RC" ] && unset RCLONE_RC
+
+exec "$RCLONE_BIN_DIR/rclone" config "$@"

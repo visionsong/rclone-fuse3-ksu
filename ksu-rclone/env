@@ -1,0 +1,80 @@
+# shellcheck shell=sh disable=SC2034
+# Sourced by every rclone entry point.
+#
+# KernelSU runs module scripts with BusyBox `ash` in standalone mode
+# (ASH_STANDALONE=1), so this file must stay plain POSIX sh.
+
+# Resolve the module dir without hardcoding it. KernelSU docs explicitly say
+# not to hardcode $MODPATH; callers export MODDIR, installer uses MODPATH.
+RCLONEDIR="${RCLONEDIR:-${MODDIR:-${MODPATH:-/data/adb/modules/rclone}}}"
+RCLONEPROP="$RCLONEDIR/module.prop"
+
+# Binaries stay inside the module tree. This is what makes the module work
+# without a metamodule: /system is only mounted by meta-overlayfs, so relying
+# on `rclone` being on PATH is not safe.
+RCLONE_BIN_DIR="$RCLONEDIR/system/bin"
+
+RCLONE_LOG_DIR="${RCLONE_LOG_DIR:-${TMPDIR:-/data/local/tmp}}"
+
+RCLONE_CONFIG_DIR="$RCLONEDIR/conf"
+RCLONE_CONFIG="${RCLONE_CONFIG_DIR}/rclone.conf"
+RCLONESYNC_CONF="${RCLONE_CONFIG_DIR}/sync"
+RCLONECOPY_CONF="${RCLONE_CONFIG_DIR}/copy"
+RCLONE_CACHE_DIR="${DOWNLOAD_CACHE:-${TMPDIR:-/data/local/tmp}}/rclone"
+
+# --- boot sequencing -------------------------------------------------------
+# Every wait below is bounded and overridable so a bad boot can never turn into
+# a hang, and so tests can compress the timings.
+RCLONE_BOOT_WAIT_TRIES="${RCLONE_BOOT_WAIT_TRIES:-30}"
+RCLONE_BOOT_WAIT_INTERVAL="${RCLONE_BOOT_WAIT_INTERVAL:-4}"
+RCLONE_NET_WAIT_TRIES="${RCLONE_NET_WAIT_TRIES:-6}"
+RCLONE_NET_WAIT_INTERVAL="${RCLONE_NET_WAIT_INTERVAL:-5}"
+RCLONE_SYNC_INTERVAL="${RCLONE_SYNC_INTERVAL:-180}"
+
+# --- mount tuning ----------------------------------------------------------
+RCLONE_MOUNT_DIR="${RCLONE_MOUNT_DIR:-/mnt}"
+
+RCLONE_MULTI_THREAD_STREAMS="${RCLONE_MULTI_THREAD_STREAMS:-8}"
+RCLONE_MULTI_THREAD_CHUNK_SIZE="${RCLONE_MULTI_THREAD_CHUNK_SIZE:-64M}"
+RCLONE_MULTI_THREAD_CUTOFF="${RCLONE_MULTI_THREAD_CUTOFF:-64M}"
+
+RCLONE_ALLOW_OTHER="${RCLONE_ALLOW_OTHER:-true}"
+RCLONE_BUFFER_SIZE="${RCLONE_BUFFER_SIZE:-60M}"
+RCLONE_DIR_CACHE_TIME="${RCLONE_DIR_CACHE_TIME:-10m}"
+
+RCLONE_VFS_CACHE_MODE="${RCLONE_VFS_CACHE_MODE:-full}"
+RCLONE_VFS_CACHE_MAX_AGE="${RCLONE_VFS_CACHE_MAX_AGE:-36h}"
+RCLONE_VFS_CACHE_MAX_SIZE="${RCLONE_VFS_CACHE_MAX_SIZE:-32G}"
+RCLONE_VFS_READ_CHUNK_SIZE="${RCLONE_VFS_READ_CHUNK_SIZE:-4M}"
+RCLONE_VFS_READ_CHUNK_SIZE_LIMIT="${RCLONE_VFS_READ_CHUNK_SIZE_LIMIT:-512M}"
+RCLONE_VFS_READ_CHUNK_STREAMS="${RCLONE_VFS_READ_CHUNK_STREAMS:-2}"
+RCLONE_VFS_READ_AHEAD="${RCLONE_VFS_READ_AHEAD:-192M}"
+
+RCLONE_ATTR_TIMEOUT="${RCLONE_ATTR_TIMEOUT:-3s}"
+RCLONE_GID="${RCLONE_GID:-1015}"
+
+# --- web GUI ---------------------------------------------------------------
+RCLONE_RC_ADDR="${RCLONE_RC_ADDR:-:5572}"
+RCLONE_RC_WEB_GUI_UPDATE="${RCLONE_RC_WEB_GUI_UPDATE:-true}"
+RCLONE_RC_WEB_GUI_NO_OPEN_BROWSER="${RCLONE_RC_WEB_GUI_NO_OPEN_BROWSER:-true}"
+
+if [ -f "${RCLONE_CONFIG_DIR}/htpasswd" ]; then
+  RCLONE_RC_HTPASSWD="${RCLONE_RC_HTPASSWD:-${RCLONE_CONFIG_DIR}/htpasswd}"
+else
+  RCLONE_RC_NO_AUTH="${RCLONE_RC_NO_AUTH:-true}"
+fi
+
+# User overrides win, and this line is sourced last on purpose.
+if [ -f "${RCLONE_CONFIG_DIR}/env" ]; then
+  . "${RCLONE_CONFIG_DIR}/env"
+fi
+
+# The pid files are derived AFTER the user overrides, so that pointing
+# RCLONE_LOG_DIR elsewhere in conf/env moves the pid files too. Deriving them
+# earlier leaves a stale pid path behind, which silently breaks the Action
+# toggle: it would no longer find the pid that service.sh wrote.
+RCLONEWEB_PID="${RCLONE_LOG_DIR}/rclone_web.pid"
+RCLONESYNC_PID="${RCLONE_LOG_DIR}/rclone_sync.pid"
+
+# Keep the exit status 0 so `set -e` callers never trip over this file.
+:

@@ -1,0 +1,10 @@
+#!/system/bin/sh
+# Run the rclone Web GUI (rc daemon with the built-in web UI).
+MODDIR=${0%/*}/../..
+set -a
+. "$MODDIR/env"
+set +a
+
+[ -n "$RCLONE_RC" ] && unset RCLONE_RC
+
+exec "$RCLONE_BIN_DIR/rclone" rcd --rc-web-gui "$@"
